@@ -54,6 +54,9 @@ End-to-end NLP-проект: от сырого JSONL с сотнями тыся�
 | **8. Insight Fusion** | Самые негативные темы, helpful votes и verified purchase в разрезе тем, sentiment-тренды |
 | **9. Dashboard** | Сводные визуализации |
 | **10. Deployment** | End-to-end Pipeline `сырой текст → очистка → модель`, сохранение и проверка |
+| **11. Baseline tuning (LinearSVC)** | `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация по macro-F1; настроенный baseline (macro-F1 0.657 → 0.717, neutral recall 0.17 → 0.46) |
+| **12. Transformer (DistilBERT)** | Дообучение DistilBERT на сыром тексте (GPU, fp16, взвешенный loss) — **лучшая модель проекта** (macro-F1 0.744, neutral recall 0.69) |
+| **13. BERTopic vs LDA** | Тематическое моделирование на смысловых эмбеддингах (MiniLM) как сравнение с LDA; исследовательский раздел, осознанный выбор LDA для дашборда |
 
 ---
 
@@ -77,8 +80,8 @@ Amazon Review Intelligence/
 │   ├── lda_model.joblib
 │   ├── topic_vectorizer.joblib
 │   ├── final_sentiment_model.joblib   # деплой-модель (raw text → sentiment)
-│   ├── svc_tuned_pipeline.joblib      # настроенный LinearSVC (раздел 12)
-│   └── distilbert_sentiment/          # дообученный DistilBERT (раздел 11)
+│   ├── svc_tuned_pipeline.joblib      # настроенный LinearSVC (раздел 11)
+│   └── distilbert_sentiment/          # дообученный DistilBERT (раздел 12)
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -191,10 +194,10 @@ Sentiment-классификация (3 класса, тестовая выбо�
 и насколько помогает честный тюнинг самого baseline. Все сравнения честные: **тот же**
 `train_test_split` (`random_state=42`), та же разметка, та же тестовая выборка (92 140 отзывов).
 
-- **DistilBERT** (раздел 11): сырой текст (`title + text`), GPU (RTX 3090, fp16, 2 эпохи, ~16 мин),
-  **взвешенный loss** против дисбаланса ~82/11/7.
-- **LinearSVC (tuned)** (раздел 12): `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация
+- **LinearSVC (tuned)** (раздел 11): `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация
   по macro-F1, на полном train (CPU).
+- **DistilBERT** (раздел 12): сырой текст (`title + text`), GPU (RTX 3090, fp16, 2 эпохи, ~16 мин),
+  **взвешенный loss** против дисбаланса ~82/11/7.
 
 | Модель | accuracy | macro F1 | weighted F1 | recall (neutral) |
 |---|---|---|---|---|
