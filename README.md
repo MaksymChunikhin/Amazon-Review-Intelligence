@@ -230,23 +230,3 @@ Sentiment-классификация (3 класса, тестовая выбо�
 **Инженерное решение:** в дашборде осознанно оставлен **LDA** — быстрый, воспроизводимый, мгновенно размечает все ~460k отзывов и укладывается в 12 интерпретируемых тем. BERTopic точнее и конкретнее, но 65 тем и 46% «Прочее» потребовали бы редизайна аналитики и пересчёта эмбеддингов на GPU по всему датасету. Компромисс *быстро + воспроизводимо* против *точно + тяжело* решён в пользу первого; BERTopic задокументирован как направление, к которому стоит переходить при необходимости детальной сегментации по конкретным товарам.
 
 ---
-
-## Деплой-модель
-
-`models/final_sentiment_model.joblib` — это `Pipeline`, который принимает **сырой**
-текст (с HTML и contractions) и сам выполняет очистку, исключая рассинхрон
-между train-time и inference-time препроцессингом:
-
-```python
-import joblib
-import nlp_utils                      # содержит clean_review_text / clean_batch
-nlp_utils.register_main()             # обязательно: pickle ссылается на __main__.clean_batch
-
-model = joblib.load("models/final_sentiment_model.joblib")
-model.predict(["The product <b>looks great</b> and it's very easy to use!"])
-# -> array(['positive'], dtype=object)
-```
-
-> Pipeline сериализован с `FunctionTransformer(clean_batch)`, где `clean_batch` ссылается
-> на `__main__`. Без `nlp_utils.register_main()` загрузка падает с
-> `AttributeError: Can't get attribute 'clean_batch'`.
