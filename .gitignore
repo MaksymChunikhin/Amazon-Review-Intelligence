@@ -1,0 +1,36 @@
+# Данные (исходный JSONL и кэш-выборка) — большие, не версионируются
+data/*.jsonl
+data/*.parquet
+
+# Обученные модели — артефакты, пересоздаются запуском ноутбука
+models/*.joblib
+models/distilbert_sentiment/
+models/distilbert_metrics.json
+models/bertopic_model/
+models/bertopic_topics_*.csv
+
+# Локальные бэкапы (ноутбук, PATH)
+*.bak
+path_backup_*.txt
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Логи дашборда
+streamlit_log.txt
+
+# Локальные настройки Claude Code и личный план проекта
+.claude/
+plan_.docx
+
+# Временные файлы Office / ОС
+~$*
+*.tmp
+Thumbs.db
+.DS_Store

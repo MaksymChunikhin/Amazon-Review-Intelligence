@@ -1,0 +1,31 @@
+# Python 3.10
+# Версии зафиксированы под обучение и инференс моделей (важно: артефакты
+# в models/*.joblib совместимы именно с scikit-learn 1.7.2).
+
+pandas==2.0.1
+numpy==1.26.4
+scikit-learn==1.7.2
+lightgbm==4.3.0
+matplotlib==3.7.1
+seaborn==0.12.2
+joblib==1.5.3
+pyarrow==24.0.0
+
+# Dashboard (app.py)
+streamlit==1.58.0
+plotly==6.6.0
+
+# Experiment: DistilBERT (разделы 11–12 ноутбука) — нужен GPU
+# torch ставить с CUDA-сборкой:
+#   pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+torch==2.2.2
+transformers==4.41.2
+datasets==4.8.5
+accelerate==1.13.0
+evaluate==0.4.6
+
+# Topic modeling experiment: BERTopic (раздел 13 ноутбука) — нужен GPU
+bertopic==0.17.4
+sentence-transformers==3.4.1
+umap-learn==0.5.12
+hdbscan==0.8.43
