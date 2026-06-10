@@ -1,5 +1,12 @@
 # Amazon Review Intelligence
 
+> **TL;DR.** End-to-end NLP project: 500k Amazon Home & Kitchen reviews → sentiment classification
+> (best model: fine-tuned **DistilBERT, macro-F1 0.744**, beating a tuned TF-IDF baseline at 0.717),
+> 12 LDA topics with pain-point analytics, rating-vs-text mismatch detection, and a bilingual
+> Streamlit dashboard with live prediction. Validation is strict throughout: one stratified
+> train/test split shared by all five models, tuning via CV on train only, limitations documented.
+> Notebooks in [notebooks/](notebooks/) are bilingual (EN/RU); the README below is in Russian.
+
 End-to-end NLP-проект: от сырого JSONL с сотнями тысяч отзывов Amazon до интерактивного двуязычного дашборда с sentiment-анализом, тематическим моделированием и live-предсказанием.
 
 **Проблема.** У продавца на Amazon (категория Home & Kitchen) — сотни тысяч отзывов. Звёздный рейтинг показывает *насколько* доволен покупатель, но не *что именно* пошло не так и где скрытое недовольство (5★ с раздражённым текстом). Вручную это не прочитать.
@@ -221,6 +228,10 @@ Sentiment-классификация (3 класса, тестовая выбо�
   neutral recall **0.17 → 0.46**. Главный фактор — сильная регуляризация (`C≈0.06` против дефолтного `1.0`).
 - **DistilBERT всё равно выигрывает** по обеим ключевым метрикам: macro-F1 **0.744** vs 0.717 и
   особенно neutral recall **0.69** vs 0.46. Контекст даёт устойчивое преимущество на самом сложном классе.
+- **Преимущество статистически значимо:** bootstrap разницы macro-F1 (1000 ресэмплов теста) даёт
+  +0.028 с 95% CI **[+0.023, +0.032]**, p < 0.001 — разрыв не объясняется случайностью выборки.
+- **Цена `max_length=128`:** лимит обрезает **11.9%** отзывов теста (медианная длина — 44 токена,
+  95-й перцентиль — 198), то есть для подавляющего большинства отзывов модель видит текст целиком.
 - Вывод: настроенный baseline закрывает бóльшую часть разрыва, но DistilBERT всё же выше по ключевым метрикам — за счёт учёта контекста, недоступного TF-IDF-моделям.
 
 > DistilBERT требует GPU-сборки torch (PyPI-сборка для Linux уже включает CUDA) + `accelerate`.

@@ -1,13 +1,10 @@
 """Shared NLP preprocessing utilities for the Amazon Review Intelligence project.
 
-These functions mirror the cleaning logic used inside the notebook so that the
-dashboard (and the saved end-to-end sentiment pipeline) preprocess text exactly
-the same way at inference time as during training.
-
-IMPORTANT: `models/final_sentiment_model.joblib` was pickled with a
-`FunctionTransformer(clean_batch)` step whose function reference points at
-`__main__.clean_batch`. Any script that loads that model must expose
-`clean_review_text` and `clean_batch` in `__main__`. Use `register_main()` for that.
+These functions are the single source of truth for text cleaning: the notebooks
+and the dashboard import them, so inference-time preprocessing always matches
+training. `models/final_sentiment_model.joblib` is pickled with a
+`FunctionTransformer(clean_batch)` step that references `nlp_utils.clean_batch`,
+so loading it only requires this module to be importable.
 """
 
 import re
@@ -86,11 +83,3 @@ def build_full_text(title, text):
     title = "" if pd.isna(title) else str(title)
     text = "" if pd.isna(text) else str(text)
     return f"{title}. {text}"
-
-
-def register_main():
-    """Expose cleaning fns in __main__ so the pickled sentiment model can unpickle."""
-    import __main__
-
-    __main__.clean_review_text = clean_review_text
-    __main__.clean_batch = clean_batch
