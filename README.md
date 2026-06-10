@@ -1,166 +1,169 @@
 # Amazon Review Intelligence
 
+**English** | [Русский](README.ru.md)
+
 > **TL;DR.** End-to-end NLP project: 500k Amazon Home & Kitchen reviews → sentiment classification
 > (best model: fine-tuned **DistilBERT, macro-F1 0.744**, beating a tuned TF-IDF baseline at 0.717),
 > 12 LDA topics with pain-point analytics, rating-vs-text mismatch detection, and a bilingual
 > Streamlit dashboard with live prediction. Validation is strict throughout: one stratified
 > train/test split shared by all five models, tuning via CV on train only, limitations documented.
-> Notebooks in [notebooks/](notebooks/) are bilingual (EN/RU); the README below is in Russian.
+> Notebooks in [notebooks/](notebooks/) are bilingual (EN/RU).
 
-End-to-end NLP-проект: от сырого JSONL с сотнями тысяч отзывов Amazon до интерактивного двуязычного дашборда с sentiment-анализом, тематическим моделированием и live-предсказанием.
+End-to-end NLP project: from a raw JSONL with hundreds of thousands of Amazon reviews to an interactive bilingual dashboard with sentiment analysis, topic modeling, and live prediction.
 
-**Проблема.** У продавца на Amazon (категория Home & Kitchen) — сотни тысяч отзывов. Звёздный рейтинг показывает *насколько* доволен покупатель, но не *что именно* пошло не так и где скрытое недовольство (5★ с раздражённым текстом). Вручную это не прочитать.
+**Problem.** An Amazon seller (Home & Kitchen category) has hundreds of thousands of reviews. The star rating shows *how* satisfied a customer is, but not *what exactly* went wrong or where the hidden dissatisfaction is (a 5★ with an irritated text). No one can read all of it manually.
 
-**Решение.** Пайплайн, который превращает сырой текст в аналитику: классифицирует тональность (3 класса), выделяет 12 тем и customer pain points, находит расхождения «рейтинг vs текст» и отдаёт всё это в дашборд с предсказанием в реальном времени. Пять моделей сравнены честно (один `train_test_split`, та же разметка); лучшая — дообученный **DistilBERT**.
+**Solution.** A pipeline that turns raw text into analytics: classifies sentiment (3 classes), extracts 12 topics and customer pain points, finds rating-vs-text mismatches, and serves all of it in a dashboard with real-time prediction. Five models compared fairly (same `train_test_split`, same labeling); the best one is a fine-tuned **DistilBERT**.
 
-**Результат.**
-- **DistilBERT: macro-F1 0.744, neutral recall 0.69** — обходит и настроенный baseline (0.717), и классику на TF-IDF.
-- Локализованы pain points: *Price, Value & Delivery Issues* — **41.8% негатива**, *Complaints & Malfunctions* — 34.1%.
-- Mismatch-анализ: **11.3% всех 1★** имеют позитивный текст — сигнал об ошибочно занижённых оценках.
-- Интерактивный **Streamlit-дашборд** (RU/EN) с 5 вкладками и live-предиктором.
+**Results.**
+- **DistilBERT: macro-F1 0.744, neutral recall 0.69** — beats both the tuned baseline (0.717) and the classic TF-IDF models.
+- Pain points localized: *Price, Value & Delivery Issues* — **41.8% negative**, *Complaints & Malfunctions* — 34.1%.
+- Mismatch analysis: **11.3% of all 1★ reviews** have positive text — a signal of mistakenly lowered ratings.
+- Interactive **Streamlit dashboard** (RU/EN) with 5 tabs and a live predictor.
 
-![Сравнение моделей по macro-F1](assets/macro_f1.png)
+![Model comparison by macro-F1](assets/macro_f1.png)
 
-> ### Честно об ограничениях
-> Тональность выведена из **звёздного рейтинга** (weak supervision), а не из ручной разметки текста: 1–2★ → negative, 3★ → neutral, 4–5★ → positive. Это даёт бесплатные метки на 460k отзывов, но платой идёт шум — особенно класс **neutral** (3★), который по тексту плохо отделим от соседних и тащит за собой низкий recall у всех моделей. Поэтому ключевая метрика — **macro-F1**, а не accuracy (датасет на ~82% positive). А mismatch-кейсы «рейтинг ≠ текст» — это смесь *реальных* расхождений и *ошибок модели*; в дашборде их можно отфильтровать по уверенности, но полностью разделить нельзя.
+> ### Honest about limitations
+> Sentiment is derived from the **star rating** (weak supervision), not from manual text labeling: 1–2★ → negative, 3★ → neutral, 4–5★ → positive. This yields free labels for 460k reviews, but the price is noise — especially the **neutral** class (3★), which is poorly separable from its neighbors by text alone and drags down recall for every model. That is why the key metric is **macro-F1**, not accuracy (the dataset is ~82% positive). And the "rating ≠ text" mismatch cases are a mix of *real* discrepancies and *model errors*; the dashboard lets you filter them by confidence, but they cannot be fully separated.
 
 ---
 
-## Дашборд
+## Dashboard
 
-Интерактивный Streamlit-дашборд с двуязычным (RU/EN) интерфейсом и пятью вкладками. Запуск — в разделе [Интерактивный дашборд](#интерактивный-дашборд-streamlit) ниже.
+Interactive Streamlit dashboard with a bilingual (RU/EN) interface and five tabs. See [Interactive dashboard](#interactive-dashboard-streamlit) below for how to run it.
 
-**Overview / Обзор** — KPI и распределения рейтингов и тональности:
+**Overview** — KPIs and distributions of ratings and sentiment:
 ![Overview](assets/overview.jpg)
 
-**Topics & Pain Points / Темы и проблемы** — heatmap «тема × тональность», самые негативные темы:
+**Topics & Pain Points** — topic × sentiment heatmap, the most negative topics:
 ![Topics & Pain Points](assets/topics.jpg)
 
-**Mismatch Explorer / Расхождения** — отзывы, где текст противоречит звёздам (5★ + негатив, 1★ + позитив):
+**Mismatch Explorer** — reviews where the text contradicts the stars (5★ + negative, 1★ + positive):
 ![Mismatch Explorer](assets/mismatch.jpg)
 
-**Live Predictor / Прогноз** — ввод отзыва → тональность, уверенность и тема в реальном времени:
+**Live Predictor** — type a review → sentiment, confidence, and topic in real time:
 ![Live Predictor](assets/predictor.jpg)
 
-**Trends / Динамика** — объём отзывов и доли тональности по месяцам:
+**Trends** — review volume and sentiment shares by month:
 ![Trends](assets/trends.jpg)
 
 ---
 
-## Что внутри
+## What's inside
 
-Анализ разбит на три ноутбука в `notebooks/`, выполняемых по порядку: **01** готовит данные
-(`data/reviews_clean.parquet`), **02** обучает sentiment-модели и фиксирует train/test split
-(`data/split.parquet`), **03** строит темы и бизнес-инсайты на тех же данных и split.
-Все markdown-описания в ноутбуках двуязычные (EN + RU).
+The analysis is split into three notebooks in `notebooks/`, executed in order: **01** prepares the data
+(`data/reviews_clean.parquet`), **02** trains the sentiment models and fixes the train/test split
+(`data/split.parquet`), **03** builds topics and business insights on the same data and split.
+All markdown descriptions in the notebooks are bilingual (EN + RU).
 
-| Раздел | Содержание |
-|--------|------------|
-| **1.1 Data Ingestion** | Чтение большого JSONL чанками + равномерная выборка 500k отзывов через reservoir sampling, фильтр по году (≥ 2019), кэш в parquet |
-| **1.2 Data Cleaning** | Удаление дубликатов (по строке и по тексту), отсев слишком коротких отзывов |
-| **1.3 NLP Preprocessing** | Очистка текста (HTML, contractions, пунктуация), объединение `title + text`, удаление стоп-слов |
-| **1.4 EDA** | Распределение рейтингов и дисбаланс классов; разметка тональности по звёздам (weak supervision); частотный анализ слов и биграмм по классам; динамика во времени |
-| **2.1 Sentiment Analysis** | 3 baseline-модели на TF-IDF: Logistic Regression, **LinearSVC (calibrated)**, LightGBM; error analysis, сравнение по accuracy / macro-F1 / weighted-F1 |
-| **2.2 Deployment** | End-to-end Pipeline `сырой текст → очистка → модель`, сохранение и проверка |
-| **2.3 Тюнинг LinearSVC** | `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация по macro-F1; настроенный baseline (macro-F1 0.657 → 0.717, neutral recall 0.17 → 0.46) |
-| **2.4 Transformer (DistilBERT)** | Дообучение DistilBERT на сыром тексте (GPU, fp16, взвешенный loss) — **лучшая модель проекта** (macro-F1 0.744, neutral recall 0.69) |
-| **3.1 Topic Modeling (LDA)** | LDA (12 тем) на CountVectorizer, бизнес-разметка тем, topic × sentiment, динамика тем во времени |
-| **3.2 Mismatch Analysis** | Расхождения звёздного рейтинга и предсказанной тональности (с фильтром по confidence) |
-| **3.3 Insight Fusion** | Самые негативные темы, helpful votes и verified purchase в разрезе тем, sentiment-тренды |
-| **3.4 Dashboard** | Сводные визуализации |
-| **3.5 BERTopic vs LDA** | Тематическое моделирование на смысловых эмбеддингах (MiniLM) как сравнение с LDA; исследовательский раздел, осознанный выбор LDA для дашборда |
+| Section | Contents |
+|---------|----------|
+| **1.1 Data Ingestion** | Chunked reading of a large JSONL + uniform 500k-review sample via reservoir sampling, year filter (≥ 2019), parquet cache |
+| **1.2 Data Cleaning** | Duplicate removal (by row and by text), filtering out too-short reviews |
+| **1.3 NLP Preprocessing** | Text cleaning (HTML, contractions, punctuation), merging `title + text`, stop-word removal |
+| **1.4 EDA** | Rating distribution and class imbalance; star-based sentiment labeling (weak supervision); word and bigram frequency analysis per class; trends over time |
+| **2.1 Sentiment Analysis** | 3 baseline models on TF-IDF: Logistic Regression, **LinearSVC (calibrated)**, LightGBM; error analysis, comparison by accuracy / macro-F1 / weighted-F1 |
+| **2.2 Deployment** | End-to-end Pipeline `raw text → cleaning → model`, saving and verification |
+| **2.3 LinearSVC tuning** | `RandomizedSearchCV` over `C` and TF-IDF parameters, optimized for macro-F1; tuned baseline (macro-F1 0.657 → 0.717, neutral recall 0.17 → 0.46) |
+| **2.4 Transformer (DistilBERT)** | Fine-tuning DistilBERT on raw text (GPU, fp16, weighted loss) — **the project's best model** (macro-F1 0.744, neutral recall 0.69) |
+| **3.1 Topic Modeling (LDA)** | LDA (12 topics) on CountVectorizer, business labeling of topics, topic × sentiment, topic trends over time |
+| **3.2 Mismatch Analysis** | Discrepancies between star rating and predicted sentiment (with a confidence filter) |
+| **3.3 Insight Fusion** | Most negative topics, helpful votes and verified purchase by topic, sentiment trends |
+| **3.4 Dashboard** | Summary visualizations |
+| **3.5 BERTopic vs LDA** | Topic modeling on semantic embeddings (MiniLM) as a comparison with LDA; exploratory section, deliberate choice of LDA for the dashboard |
 
 ---
 
-## Структура проекта
+## Project structure
 
 ```
 Amazon Review Intelligence/
 ├── notebooks/
-│   ├── 01_data_eda.ipynb              # ingestion, очистка, препроцессинг, EDA
-│   ├── 02_sentiment_models.ipynb      # baseline-модели, деплой, тюнинг, DistilBERT
-│   └── 03_topics_insights.ipynb       # LDA, mismatch, инсайты, BERTopic vs LDA
-├── app.py                             # интерактивный Streamlit-дашборд
-├── build_dashboard_data.py            # пересчёт обогащённого parquet для дашборда
-├── nlp_utils.py                       # общие функции очистки текста (ноутбуки + дашборд)
-├── distilbert_utils.py                # инференс DistilBERT для дашборда
+│   ├── 01_data_eda.ipynb              # ingestion, cleaning, preprocessing, EDA
+│   ├── 02_sentiment_models.ipynb      # baseline models, deployment, tuning, DistilBERT
+│   └── 03_topics_insights.ipynb       # LDA, mismatch, insights, BERTopic vs LDA
+├── app.py                             # interactive Streamlit dashboard
+├── build_dashboard_data.py            # rebuilds the enriched parquet for the dashboard
+├── nlp_utils.py                       # shared text-cleaning functions (notebooks + dashboard)
+├── distilbert_utils.py                # DistilBERT inference for the dashboard
 ├── data/
-│   ├── Home_and_Kitchen.jsonl         # исходные данные (не в git)
-│   ├── reviews_processed.parquet      # кэш выборки (не в git)
-│   ├── reviews_clean.parquet          # очищенный датасет из 01 (не в git)
-│   ├── split.parquet                  # фиксированный train/test split из 02 (не в git)
-│   └── reviews_dashboard.parquet      # обогащённые данные для дашборда (не в git)
-├── models/                            # обученные артефакты (не в git)
+│   ├── Home_and_Kitchen.jsonl         # raw data (not in git)
+│   ├── reviews_processed.parquet      # sample cache (not in git)
+│   ├── reviews_clean.parquet          # cleaned dataset from 01 (not in git)
+│   ├── split.parquet                  # fixed train/test split from 02 (not in git)
+│   └── reviews_dashboard.parquet      # enriched data for the dashboard (not in git)
+├── models/                            # trained artifacts (not in git)
 │   ├── log_reg_pipeline.joblib
 │   ├── svc_pipeline.joblib
 │   ├── lightgbm_pipeline.joblib
 │   ├── lda_model.joblib
 │   ├── topic_vectorizer.joblib
-│   ├── final_sentiment_model.joblib   # деплой-модель (raw text → sentiment)
-│   ├── svc_tuned_pipeline.joblib      # настроенный LinearSVC (раздел 2.3)
-│   └── distilbert_sentiment/          # дообученный DistilBERT (раздел 2.4)
+│   ├── final_sentiment_model.joblib   # deployment model (raw text → sentiment)
+│   ├── svc_tuned_pipeline.joblib      # tuned LinearSVC (section 2.3)
+│   └── distilbert_sentiment/          # fine-tuned DistilBERT (section 2.4)
 ├── requirements.txt
 ├── .gitignore
-└── README.md
+├── README.md                          # this file (English)
+└── README.ru.md                       # Russian version
 ```
 
 ---
 
-## Установка и запуск
+## Setup and run
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate       # Linux / WSL
 pip install -r requirements.txt
-jupyter notebook notebooks/     # выполнять по порядку: 01 → 02 → 03
+jupyter notebook notebooks/     # run in order: 01 → 02 → 03
 ```
 
-> **Важно:** артефакты в `models/*.joblib` чувствительны к версии scikit-learn
-> (pickle между версиями не гарантирован: возможны `NotFittedError` или предупреждения
-> `InconsistentVersionWarning`). Используйте версии из `requirements.txt`
-> либо удалите `models/*.joblib` — ноутбуки переобучат модели заново.
+> **Important:** the artifacts in `models/*.joblib` are sensitive to the scikit-learn version
+> (pickle is not guaranteed across versions: you may see `NotFittedError` or
+> `InconsistentVersionWarning`). Use the versions from `requirements.txt`,
+> or delete `models/*.joblib` — the notebooks will retrain the models from scratch.
 
-Данные: [Amazon Reviews 2023 (McAuley Lab, UCSD)](https://amazon-reviews-2023.github.io/), категория *Home & Kitchen*.
-Скачать `Home_and_Kitchen.jsonl` и положить в `data/`. При наличии `reviews_processed.parquet`
-шаг ingestion пропускается.
+Data: [Amazon Reviews 2023 (McAuley Lab, UCSD)](https://amazon-reviews-2023.github.io/), *Home & Kitchen* category.
+Download `Home_and_Kitchen.jsonl` and put it in `data/`. If `reviews_processed.parquet` is present,
+the ingestion step is skipped.
 
 ---
 
-## Интерактивный дашборд (Streamlit)
+## Interactive dashboard (Streamlit)
 
 ```bash
-# 1. один раз пересчитать обогащённые данные (sentiment, темы, предсказания модели)
-python build_dashboard_data.py        # создаёт data/reviews_dashboard.parquet (нужен GPU)
-# 2. запустить дашборд
-streamlit run app.py                  # откроется на http://localhost:8501
+# 1. rebuild the enriched data once (sentiment, topics, model predictions)
+python build_dashboard_data.py        # creates data/reviews_dashboard.parquet (requires a GPU)
+# 2. launch the dashboard
+streamlit run app.py                  # opens at http://localhost:8501
 ```
 
-Предсказания тональности в дашборде делает **дообученный DistilBERT** (лучшая модель из раздела 2.4),
-темы — LDA. Дашборд загружает готовый parquet и модели и ничего не переобучает. Вкладки:
+Sentiment predictions in the dashboard are made by the **fine-tuned DistilBERT** (the best model from section 2.4),
+topics — by LDA. The dashboard loads the prebuilt parquet and models and retrains nothing. Tabs:
 
-| Вкладка | Что показывает |
+| Tab | What it shows |
 |---|---|
-| **📊 Overview** | KPI (кол-во, ср. рейтинг, % позитива/verified) + распределение рейтингов и тональности |
-| **🏷️ Topics & Pain Points** | Heatmap «тема × тональность», самые негативные темы, helpful votes по темам, примеры отзывов |
-| **📈 Trends** | Объём отзывов и доли тональности по месяцам |
-| **⚠️ Mismatch Explorer** | Расхождения рейтинга и предсказанной DistilBERT тональности (слайдер по confidence) |
-| **🔮 Live Predictor** | Ввод своего отзыва → тональность + confidence (DistilBERT) + тема в реальном времени |
+| **📊 Overview** | KPIs (count, avg. rating, % positive/verified) + rating and sentiment distributions |
+| **🏷️ Topics & Pain Points** | Topic × sentiment heatmap, most negative topics, helpful votes by topic, example reviews |
+| **📈 Trends** | Review volume and sentiment shares by month |
+| **⚠️ Mismatch Explorer** | Discrepancies between rating and DistilBERT-predicted sentiment (confidence slider) |
+| **🔮 Live Predictor** | Type your own review → sentiment + confidence (DistilBERT) + topic in real time |
 
-> `build_dashboard_data.py` повторяет очистку и разметку из ноутбука, прогоняет **DistilBERT**
-> и LDA по всем отзывам, сохраняя slim-parquet — поэтому дашборд грузится мгновенно. Инференс
-> DistilBERT требует GPU-сборки torch, поэтому на Windows скрипт запускают из PowerShell.
-> Препроцессинг текста вынесен в `nlp_utils.py`, инференс DistilBERT — в `distilbert_utils.py`.
+> `build_dashboard_data.py` replicates the cleaning and labeling from the notebook, runs **DistilBERT**
+> and LDA over all reviews, and saves a slim parquet — which is why the dashboard loads instantly.
+> DistilBERT inference requires a GPU build of torch, so on Windows the script is run from PowerShell.
+> Text preprocessing lives in `nlp_utils.py`, DistilBERT inference in `distilbert_utils.py`.
 
-> ⚠️ **Охват отличается от ноутбука.** Дашборд считает предсказания тональности и темы
-> по **всем** ~460k отзывам, тогда как в ноутбуке предсказания делались на test-выборке
-> (20%), а topic modeling — на сэмпле 200k. Поэтому абсолютные числа mismatch-кейсов в
-> дашборде будут больше, чем в ноутбуке (доли при этом сопоставимы).
+> ⚠️ **Coverage differs from the notebook.** The dashboard computes sentiment predictions and topics
+> over **all** ~460k reviews, whereas in the notebook predictions were made on the test set
+> (20%) and topic modeling on a 200k sample. Therefore the absolute mismatch counts in the
+> dashboard will be higher than in the notebook (the shares remain comparable).
 
 ---
 
-## Целевая переменная
+## Target variable
 
-Тональность выводится из звёздного рейтинга (weak supervision):
+Sentiment is derived from the star rating (weak supervision):
 
 | Rating | Sentiment |
 |--------|-----------|
@@ -168,55 +171,55 @@ streamlit run app.py                  # откроется на http://localhost
 | 3      | neutral   |
 | 4–5    | positive  |
 
-Датасет сильно несбалансирован (~82% positive), поэтому ключевая метрика — **macro-F1**, а не accuracy.
+The dataset is heavily imbalanced (~82% positive), so the key metric is **macro-F1**, not accuracy.
 
 ---
 
-## Ключевые результаты
+## Key results
 
-Sentiment-классификация (3 класса, тестовая выборка 92 140 отзывов):
+Sentiment classification (3 classes, test set of 92,140 reviews):
 
-| Модель | accuracy | macro F1 | weighted F1 |
+| Model | accuracy | macro F1 | weighted F1 |
 |---|---|---|---|
 | Logistic Regression | 0.862 | **0.694** | 0.879 |
 | **LinearSVC (calibrated)** | **0.901** | 0.657 | **0.886** |
 | LightGBM | 0.859 | 0.696 | 0.877 |
 
-- **Деплой-baseline — LinearSVC** (calibrated): лучшие accuracy (0.90) и weighted-F1
-  (0.886) среди трёх baseline. Калибровка через `CalibratedClassifierCV` даёт `predict_proba`,
-  поэтому SVC — единая модель и для анализа уверенности, и для лёгкого CPU-деплоя
-  (`final_sentiment_model.joblib`). Цена — низкий recall на классе **neutral** (0.17) и
-  худший из трёх macro-F1 (0.657).
-- **Лучшая модель проекта — DistilBERT** (раздел 2.4, macro-F1 **0.744**, neutral recall 0.69);
-  именно она считает предсказания в дашборде. Роли разведены намеренно: LinearSVC — быстрый
-  CPU-baseline для деплоя, DistilBERT — максимальное качество на GPU для аналитики.
-- Самый сложный класс — **neutral** (rating 3): путается с positive/negative, что
-  ожидаемо для weak-labeled данных.
-- Topic modeling (12 тем) выделяет customer pain points: наиболее негативные темы —
-  *Price, Value & Delivery Issues* (41.8% negative) и *Complaints & Malfunctions*
-  (34.1%); самые позитивные — *Gifts & Recommendations* и *Ease of Use & Cleaning* (>93%).
-- Mismatch-анализ: «1★ + positive» встречается чаще (11.3% всех 1★), чем «5★ + negative»
-  (0.5% всех 5★) — модель смещена к positive. Фильтр по confidence (≥0.70) отсекает ~70%
-  как вероятные ошибки модели, оставляя реальные расхождения.
+- **Deployment baseline — LinearSVC** (calibrated): best accuracy (0.90) and weighted-F1
+  (0.886) among the three baselines. Calibration via `CalibratedClassifierCV` provides `predict_proba`,
+  so SVC serves as a single model both for confidence analysis and for lightweight CPU deployment
+  (`final_sentiment_model.joblib`). The price is low recall on the **neutral** class (0.17) and
+  the worst macro-F1 of the three (0.657).
+- **The project's best model — DistilBERT** (section 2.4, macro-F1 **0.744**, neutral recall 0.69);
+  it is the one making predictions in the dashboard. The roles are split deliberately: LinearSVC is a fast
+  CPU baseline for deployment, DistilBERT is maximum quality on GPU for analytics.
+- The hardest class is **neutral** (rating 3): it gets confused with positive/negative, which is
+  expected for weak-labeled data.
+- Topic modeling (12 topics) surfaces customer pain points: the most negative topics are
+  *Price, Value & Delivery Issues* (41.8% negative) and *Complaints & Malfunctions*
+  (34.1%); the most positive are *Gifts & Recommendations* and *Ease of Use & Cleaning* (>93%).
+- Mismatch analysis: "1★ + positive" occurs more often (11.3% of all 1★) than "5★ + negative"
+  (0.5% of all 5★) — the model is biased toward positive. A confidence filter (≥0.70) cuts off ~70%
+  as likely model errors, leaving the real discrepancies.
 
-> ⚠️ LDA не гарантирует стабильность индексов тем между переобучениями: бизнес-метки
-> в ноутбуке (`topic_labels`) сопоставлены по топ-словам и при повторном обучении модели
-> требуют перепроверки по выводу `print_topics`.
+> ⚠️ LDA does not guarantee stable topic indices across retrainings: the business labels
+> in the notebook (`topic_labels`) were matched by top words and, after retraining the model,
+> need to be re-verified against the `print_topics` output.
 
 ---
 
-## Experiment: настроенный baseline vs Transformer (DistilBERT)
+## Experiment: tuned baseline vs Transformer (DistilBERT)
 
-Разделы **2.3–2.4 ноутбука 02** проверяют, побьёт ли контекстный трансформер классический baseline —
-и насколько помогает честный тюнинг самого baseline. Все сравнения честные: **тот же**
-`train_test_split` (`random_state=42`), та же разметка, та же тестовая выборка (92 140 отзывов).
+Sections **2.3–2.4 of notebook 02** test whether a contextual transformer beats the classic baseline —
+and how much honest tuning of the baseline itself helps. All comparisons are fair: the **same**
+`train_test_split` (`random_state=42`), the same labeling, the same test set (92,140 reviews).
 
-- **LinearSVC (tuned)** (раздел 2.3): `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация
-  по macro-F1, на полном train (CPU).
-- **DistilBERT** (раздел 2.4): сырой текст (`title + text`), GPU (RTX 3090, fp16, 2 эпохи, ~16 мин),
-  **взвешенный loss** против дисбаланса ~82/11/7.
+- **LinearSVC (tuned)** (section 2.3): `RandomizedSearchCV` over `C` and TF-IDF parameters, optimized
+  for macro-F1, on the full train set (CPU).
+- **DistilBERT** (section 2.4): raw text (`title + text`), GPU (RTX 3090, fp16, 2 epochs, ~16 min),
+  **weighted loss** against the ~82/11/7 imbalance.
 
-| Модель | accuracy | macro F1 | weighted F1 | recall (neutral) |
+| Model | accuracy | macro F1 | weighted F1 | recall (neutral) |
 |---|---|---|---|---|
 | Logistic Regression | 0.862 | 0.694 | 0.879 | 0.60 |
 | LinearSVC (calibrated, **untuned**) | **0.901** | 0.657 | 0.886 | 0.17 |
@@ -224,31 +227,32 @@ Sentiment-классификация (3 класса, тестовая выбо�
 | LinearSVC (**tuned**, `C≈0.06`) | 0.896 | 0.717 | 0.899 | 0.464 |
 | **DistilBERT (fine-tuned)** | 0.889 | **0.744** | **0.903** | **0.692** |
 
-- **Тюнинг сильно недооценённого baseline:** macro-F1 LinearSVC вырос **0.657 → 0.717 (+6.0 п.п.)**,
-  neutral recall **0.17 → 0.46**. Главный фактор — сильная регуляризация (`C≈0.06` против дефолтного `1.0`).
-- **DistilBERT всё равно выигрывает** по обеим ключевым метрикам: macro-F1 **0.744** vs 0.717 и
-  особенно neutral recall **0.69** vs 0.46. Контекст даёт устойчивое преимущество на самом сложном классе.
-- **Преимущество статистически значимо:** bootstrap разницы macro-F1 (1000 ресэмплов теста) даёт
-  +0.028 с 95% CI **[+0.023, +0.032]**, p < 0.001 — разрыв не объясняется случайностью выборки.
-- **Цена `max_length=128`:** лимит обрезает **11.9%** отзывов теста (медианная длина — 44 токена,
-  95-й перцентиль — 198), то есть для подавляющего большинства отзывов модель видит текст целиком.
-- Вывод: настроенный baseline закрывает бóльшую часть разрыва, но DistilBERT всё же выше по ключевым метрикам — за счёт учёта контекста, недоступного TF-IDF-моделям.
+- **Tuning a heavily underrated baseline:** LinearSVC macro-F1 went up **0.657 → 0.717 (+6.0 pp)**,
+  neutral recall **0.17 → 0.46**. The main driver is strong regularization (`C≈0.06` vs the default `1.0`).
+- **DistilBERT still wins** on both key metrics: macro-F1 **0.744** vs 0.717 and
+  especially neutral recall **0.69** vs 0.46. Context gives a robust advantage on the hardest class.
+- **The advantage is statistically significant:** a bootstrap of the macro-F1 difference (1000 test resamples)
+  gives +0.028 with a 95% CI of **[+0.023, +0.032]**, p < 0.001 — the gap is not explained by sampling noise.
+- **The cost of `max_length=128`:** the limit truncates **11.9%** of test reviews (median length — 44 tokens,
+  95th percentile — 198), i.e. for the vast majority of reviews the model sees the full text.
+- Takeaway: the tuned baseline closes most of the gap, but DistilBERT still leads on the key metrics —
+  thanks to context, which TF-IDF models have no access to.
 
-> DistilBERT требует GPU-сборки torch (PyPI-сборка для Linux уже включает CUDA) + `accelerate`.
-> Код — в `notebooks/02_sentiment_models.ipynb`
-> (разделы 2.3–2.4), модели кэшируются в `models/distilbert_sentiment/` и `models/svc_tuned_pipeline.joblib`
-> (артефакты не версионируются); при наличии ячейки их загружают, иначе обучают/ищут заново.
+> DistilBERT requires a GPU build of torch (the PyPI build for Linux already includes CUDA) + `accelerate`.
+> The code is in `notebooks/02_sentiment_models.ipynb`
+> (sections 2.3–2.4); models are cached in `models/distilbert_sentiment/` and `models/svc_tuned_pipeline.joblib`
+> (artifacts are not versioned); if present, the cells load them, otherwise they train/search from scratch.
 
 ---
 
-## Дополнительно: BERTopic vs LDA (раздел 3.5)
+## Bonus: BERTopic vs LDA (section 3.5)
 
-Отдельный исследовательский раздел сравнивает LDA с **BERTopic** — тематическим моделированием на смысловых эмбеддингах (MiniLM, GPU). На выборке 50k отзывов:
+A separate exploratory section compares LDA with **BERTopic** — topic modeling on semantic embeddings (MiniLM, GPU). On a 50k-review sample:
 
-- BERTopic сам нашёл около **65 тем** против заданных вручную **12** у LDA, и они конкретнее: где LDA даёт одну «Bedding & Sleep», BERTopic разделяет подушки, матрасы, простыни и одеяла.
-- Около **46% отзывов** вынесены в группу «Прочее» — короткие общие отзывы («great», «works well») без выраженной темы. LDA распределил бы их принудительно.
-- Цена: тяжелее (GPU + `bertopic`, `sentence-transformers`, `umap-learn`, `hdbscan`) и не детерминирован (UMAP вносит случайность).
+- BERTopic discovered about **65 topics** on its own versus the manually set **12** of LDA, and they are more specific: where LDA gives a single "Bedding & Sleep", BERTopic separates pillows, mattresses, sheets, and blankets.
+- About **46% of reviews** ended up in the "Other" group — short generic reviews ("great", "works well") with no distinct topic. LDA would have force-assigned them.
+- The price: heavier (GPU + `bertopic`, `sentence-transformers`, `umap-learn`, `hdbscan`) and non-deterministic (UMAP introduces randomness).
 
-**Инженерное решение:** в дашборде осознанно оставлен **LDA** — быстрый, воспроизводимый, мгновенно размечает все ~460k отзывов и укладывается в 12 интерпретируемых тем. BERTopic точнее и конкретнее, но 65 тем и 46% «Прочее» потребовали бы редизайна аналитики и пересчёта эмбеддингов на GPU по всему датасету. Компромисс *быстро + воспроизводимо* против *точно + тяжело* решён в пользу первого; BERTopic задокументирован как направление, к которому стоит переходить при необходимости детальной сегментации по конкретным товарам.
+**Engineering decision:** the dashboard deliberately keeps **LDA** — fast, reproducible, instantly labels all ~460k reviews, and fits into 12 interpretable topics. BERTopic is more precise and specific, but 65 topics and 46% "Other" would require redesigning the analytics and recomputing embeddings on GPU over the whole dataset. The *fast + reproducible* vs *precise + heavy* trade-off was resolved in favor of the former; BERTopic is documented as the direction to move toward when fine-grained, product-level segmentation is needed.
 
 ---
