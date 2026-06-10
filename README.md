@@ -42,21 +42,26 @@ End-to-end NLP-проект: от сырого JSONL с сотнями тыся�
 
 ## Что внутри
 
-| Этап | Содержание |
-|------|------------|
-| **1. Data Ingestion** | Чтение большого JSONL чанками + равномерная выборка 500k отзывов через reservoir sampling, фильтр по году (≥ 2019), кэш в parquet |
-| **2. Data Cleaning** | Удаление дубликатов (по строке и по тексту), отсев слишком коротких отзывов |
-| **3. NLP Preprocessing** | Очистка текста (HTML, contractions, пунктуация), объединение `title + text`, удаление стоп-слов |
-| **4. EDA** | Распределение рейтингов, дисбаланс классов, частотный анализ слов и биграмм по тональности, динамика во времени |
-| **5. Sentiment Analysis** | 3 baseline-модели на TF-IDF: Logistic Regression, **LinearSVC (calibrated)**, LightGBM; error analysis, сравнение по accuracy / macro-F1 / weighted-F1 |
-| **6. Topic Modeling** | LDA (12 тем) на CountVectorizer, бизнес-разметка тем, topic × sentiment, динамика тем во времени |
-| **7. Mismatch Analysis** | Расхождения звёздного рейтинга и предсказанной тональности (с фильтром по confidence) |
-| **8. Insight Fusion** | Самые негативные темы, helpful votes и verified purchase в разрезе тем, sentiment-тренды |
-| **9. Dashboard** | Сводные визуализации |
-| **10. Deployment** | End-to-end Pipeline `сырой текст → очистка → модель`, сохранение и проверка |
-| **11. Baseline tuning (LinearSVC)** | `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация по macro-F1; настроенный baseline (macro-F1 0.657 → 0.717, neutral recall 0.17 → 0.46) |
-| **12. Transformer (DistilBERT)** | Дообучение DistilBERT на сыром тексте (GPU, fp16, взвешенный loss) — **лучшая модель проекта** (macro-F1 0.744, neutral recall 0.69) |
-| **13. BERTopic vs LDA** | Тематическое моделирование на смысловых эмбеддингах (MiniLM) как сравнение с LDA; исследовательский раздел, осознанный выбор LDA для дашборда |
+Анализ разбит на три ноутбука в `notebooks/`, выполняемых по порядку: **01** готовит данные
+(`data/reviews_clean.parquet`), **02** обучает sentiment-модели и фиксирует train/test split
+(`data/split.parquet`), **03** строит темы и бизнес-инсайты на тех же данных и split.
+Все markdown-описания в ноутбуках двуязычные (EN + RU).
+
+| Раздел | Содержание |
+|--------|------------|
+| **1.1 Data Ingestion** | Чтение большого JSONL чанками + равномерная выборка 500k отзывов через reservoir sampling, фильтр по году (≥ 2019), кэш в parquet |
+| **1.2 Data Cleaning** | Удаление дубликатов (по строке и по тексту), отсев слишком коротких отзывов |
+| **1.3 NLP Preprocessing** | Очистка текста (HTML, contractions, пунктуация), объединение `title + text`, удаление стоп-слов |
+| **1.4 EDA** | Распределение рейтингов и дисбаланс классов; разметка тональности по звёздам (weak supervision); частотный анализ слов и биграмм по классам; динамика во времени |
+| **2.1 Sentiment Analysis** | 3 baseline-модели на TF-IDF: Logistic Regression, **LinearSVC (calibrated)**, LightGBM; error analysis, сравнение по accuracy / macro-F1 / weighted-F1 |
+| **2.2 Deployment** | End-to-end Pipeline `сырой текст → очистка → модель`, сохранение и проверка |
+| **2.3 Тюнинг LinearSVC** | `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация по macro-F1; настроенный baseline (macro-F1 0.657 → 0.717, neutral recall 0.17 → 0.46) |
+| **2.4 Transformer (DistilBERT)** | Дообучение DistilBERT на сыром тексте (GPU, fp16, взвешенный loss) — **лучшая модель проекта** (macro-F1 0.744, neutral recall 0.69) |
+| **3.1 Topic Modeling (LDA)** | LDA (12 тем) на CountVectorizer, бизнес-разметка тем, topic × sentiment, динамика тем во времени |
+| **3.2 Mismatch Analysis** | Расхождения звёздного рейтинга и предсказанной тональности (с фильтром по confidence) |
+| **3.3 Insight Fusion** | Самые негативные темы, helpful votes и verified purchase в разрезе тем, sentiment-тренды |
+| **3.4 Dashboard** | Сводные визуализации |
+| **3.5 BERTopic vs LDA** | Тематическое моделирование на смысловых эмбеддингах (MiniLM) как сравнение с LDA; исследовательский раздел, осознанный выбор LDA для дашборда |
 
 ---
 
@@ -64,14 +69,19 @@ End-to-end NLP-проект: от сырого JSONL с сотнями тыся�
 
 ```
 Amazon Review Intelligence/
-├── Amazon Review Intelligence.ipynb   # основной ноутбук
+├── notebooks/
+│   ├── 01_data_eda.ipynb              # ingestion, очистка, препроцессинг, EDA
+│   ├── 02_sentiment_models.ipynb      # baseline-модели, деплой, тюнинг, DistilBERT
+│   └── 03_topics_insights.ipynb       # LDA, mismatch, инсайты, BERTopic vs LDA
 ├── app.py                             # интерактивный Streamlit-дашборд
 ├── build_dashboard_data.py            # пересчёт обогащённого parquet для дашборда
-├── nlp_utils.py                       # общие функции очистки текста (ноутбук + дашборд)
+├── nlp_utils.py                       # общие функции очистки текста (ноутбуки + дашборд)
 ├── distilbert_utils.py                # инференс DistilBERT для дашборда
 ├── data/
 │   ├── Home_and_Kitchen.jsonl         # исходные данные (не в git)
 │   ├── reviews_processed.parquet      # кэш выборки (не в git)
+│   ├── reviews_clean.parquet          # очищенный датасет из 01 (не в git)
+│   ├── split.parquet                  # фиксированный train/test split из 02 (не в git)
 │   └── reviews_dashboard.parquet      # обогащённые данные для дашборда (не в git)
 ├── models/                            # обученные артефакты (не в git)
 │   ├── log_reg_pipeline.joblib
@@ -80,8 +90,8 @@ Amazon Review Intelligence/
 │   ├── lda_model.joblib
 │   ├── topic_vectorizer.joblib
 │   ├── final_sentiment_model.joblib   # деплой-модель (raw text → sentiment)
-│   ├── svc_tuned_pipeline.joblib      # настроенный LinearSVC (раздел 11)
-│   └── distilbert_sentiment/          # дообученный DistilBERT (раздел 12)
+│   ├── svc_tuned_pipeline.joblib      # настроенный LinearSVC (раздел 2.3)
+│   └── distilbert_sentiment/          # дообученный DistilBERT (раздел 2.4)
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -93,15 +103,15 @@ Amazon Review Intelligence/
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # Linux / WSL
 pip install -r requirements.txt
-jupyter notebook "Amazon Review Intelligence.ipynb"
+jupyter notebook notebooks/     # выполнять по порядку: 01 → 02 → 03
 ```
 
-> **Важно:** артефакты в `models/` сериализованы под `scikit-learn==1.7.2`.
-> При другой версии загрузка падает с `NotFittedError: idf vector is not fitted`
-> (несовместимость pickle между версиями). Используйте версии из `requirements.txt`
-> либо удалите `models/*.joblib` — ноутбук переобучит модели заново.
+> **Важно:** артефакты в `models/*.joblib` чувствительны к версии scikit-learn
+> (pickle между версиями не гарантирован: возможны `NotFittedError` или предупреждения
+> `InconsistentVersionWarning`). Используйте версии из `requirements.txt`
+> либо удалите `models/*.joblib` — ноутбуки переобучат модели заново.
 
 Данные: [Amazon Reviews 2023 (McAuley Lab, UCSD)](https://amazon-reviews-2023.github.io/), категория *Home & Kitchen*.
 Скачать `Home_and_Kitchen.jsonl` и положить в `data/`. При наличии `reviews_processed.parquet`
@@ -118,7 +128,7 @@ python build_dashboard_data.py        # создаёт data/reviews_dashboard.pa
 streamlit run app.py                  # откроется на http://localhost:8501
 ```
 
-Предсказания тональности в дашборде делает **дообученный DistilBERT** (лучшая модель из раздела 12),
+Предсказания тональности в дашборде делает **дообученный DistilBERT** (лучшая модель из раздела 2.4),
 темы — LDA. Дашборд загружает готовый parquet и модели и ничего не переобучает. Вкладки:
 
 | Вкладка | Что показывает |
@@ -170,7 +180,7 @@ Sentiment-классификация (3 класса, тестовая выбо�
   поэтому SVC — единая модель и для анализа уверенности, и для лёгкого CPU-деплоя
   (`final_sentiment_model.joblib`). Цена — низкий recall на классе **neutral** (0.17) и
   худший из трёх macro-F1 (0.657).
-- **Лучшая модель проекта — DistilBERT** (раздел 12, macro-F1 **0.744**, neutral recall 0.69);
+- **Лучшая модель проекта — DistilBERT** (раздел 2.4, macro-F1 **0.744**, neutral recall 0.69);
   именно она считает предсказания в дашборде. Роли разведены намеренно: LinearSVC — быстрый
   CPU-baseline для деплоя, DistilBERT — максимальное качество на GPU для аналитики.
 - Самый сложный класс — **neutral** (rating 3): путается с positive/negative, что
@@ -190,13 +200,13 @@ Sentiment-классификация (3 класса, тестовая выбо�
 
 ## Experiment: настроенный baseline vs Transformer (DistilBERT)
 
-Разделы **11–12 ноутбука** проверяют, побьёт ли контекстный трансформер классический baseline —
+Разделы **2.3–2.4 ноутбука 02** проверяют, побьёт ли контекстный трансформер классический baseline —
 и насколько помогает честный тюнинг самого baseline. Все сравнения честные: **тот же**
 `train_test_split` (`random_state=42`), та же разметка, та же тестовая выборка (92 140 отзывов).
 
-- **LinearSVC (tuned)** (раздел 11): `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация
+- **LinearSVC (tuned)** (раздел 2.3): `RandomizedSearchCV` по `C` и параметрам TF-IDF, оптимизация
   по macro-F1, на полном train (CPU).
-- **DistilBERT** (раздел 12): сырой текст (`title + text`), GPU (RTX 3090, fp16, 2 эпохи, ~16 мин),
+- **DistilBERT** (раздел 2.4): сырой текст (`title + text`), GPU (RTX 3090, fp16, 2 эпохи, ~16 мин),
   **взвешенный loss** против дисбаланса ~82/11/7.
 
 | Модель | accuracy | macro F1 | weighted F1 | recall (neutral) |
@@ -213,13 +223,14 @@ Sentiment-классификация (3 класса, тестовая выбо�
   особенно neutral recall **0.69** vs 0.46. Контекст даёт устойчивое преимущество на самом сложном классе.
 - Вывод: настроенный baseline закрывает бóльшую часть разрыва, но DistilBERT всё же выше по ключевым метрикам — за счёт учёта контекста, недоступного TF-IDF-моделям.
 
-> DistilBERT требует GPU-сборки torch (`torch==2.2.2+cu121`) + `accelerate`. Код — в ноутбуке
-> (разделы 11–12), модели кэшируются в `models/distilbert_sentiment/` и `models/svc_tuned_pipeline.joblib`
+> DistilBERT требует GPU-сборки torch (PyPI-сборка для Linux уже включает CUDA) + `accelerate`.
+> Код — в `notebooks/02_sentiment_models.ipynb`
+> (разделы 2.3–2.4), модели кэшируются в `models/distilbert_sentiment/` и `models/svc_tuned_pipeline.joblib`
 > (артефакты не версионируются); при наличии ячейки их загружают, иначе обучают/ищут заново.
 
 ---
 
-## Дополнительно: BERTopic vs LDA (раздел 13)
+## Дополнительно: BERTopic vs LDA (раздел 3.5)
 
 Отдельный исследовательский раздел сравнивает LDA с **BERTopic** — тематическим моделированием на смысловых эмбеддингах (MiniLM, GPU). На выборке 50k отзывов:
 

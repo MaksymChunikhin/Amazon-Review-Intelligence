@@ -1,31 +1,32 @@
-# Python 3.10
-# Версии зафиксированы под обучение и инференс моделей (важно: артефакты
-# в models/*.joblib совместимы именно с scikit-learn 1.7.2).
+# Python 3.13
+# Версии зафиксированы по фактическому окружению (miniconda, WSL2).
+# Важно: артефакты в models/*.joblib должны быть совместимы с указанной
+# версией scikit-learn — при её смене модели нужно пересоздать прогоном ноутбука.
 
-pandas==2.0.1
-numpy==1.26.4
-scikit-learn==1.7.2
-lightgbm==4.3.0
-matplotlib==3.7.1
-seaborn==0.12.2
+pandas==3.0.2
+numpy==2.4.4
+scipy==1.17.1
+scikit-learn==1.8.0
+lightgbm==4.6.0
+matplotlib==3.10.9
+seaborn==0.13.2
 joblib==1.5.3
 pyarrow==24.0.0
 
 # Dashboard (app.py)
-streamlit==1.58.0
+streamlit==1.57.0
 plotly==6.6.0
 
-# Experiment: DistilBERT (разделы 11–12 ноутбука) — нужен GPU
-# torch ставить с CUDA-сборкой:
-#   pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cu121
-torch==2.2.2
-transformers==4.41.2
-datasets==4.8.5
+# Experiment: DistilBERT (ноутбук 02, разделы 2.3–2.4) — нужен GPU
+# torch с PyPI на Linux уже включает CUDA-сборку (cu130), отдельный index-url не нужен
+torch==2.12.0
+transformers==4.57.6
+datasets==5.0.0
 accelerate==1.13.0
 evaluate==0.4.6
 
-# Topic modeling experiment: BERTopic (раздел 13 ноутбука) — нужен GPU
+# Topic modeling experiment: BERTopic (ноутбук 03, раздел 3.5) — нужен GPU
 bertopic==0.17.4
-sentence-transformers==3.4.1
+sentence-transformers==5.5.1
 umap-learn==0.5.12
 hdbscan==0.8.43
